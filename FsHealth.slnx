@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FsHealth.App/FsHealth.App.fsproj" />
+    <Project Path="src/FsHealth.Core/FsHealth.Core.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FsHealth.Core.Tests/FsHealth.Core.Tests.fsproj" />
+  </Folder>
+</Solution>

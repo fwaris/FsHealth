@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+temp/
+*.user
+*.apk
+*.aab
+*.ipa
+TestResults/

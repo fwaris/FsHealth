@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition="'$(FsHealthAndroidOnly)' == 'true'">net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="'$(FsHealthIosOnly)' == 'true'">net10.0-ios</TargetFrameworks>
+    <TargetFrameworks Condition="'$(FsHealthMacCatalystOnly)' == 'true'">net10.0-maccatalyst</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>FsHealth.App</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <ApplicationTitle>FsHealth</ApplicationTitle>
+    <ApplicationId>app.fshealth.journal</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <MauiVersion>10.0.120</MauiVersion>
+    <CodesignEntitlements Condition="'$(RuntimeIdentifier)' == 'iossimulator-arm64' Or '$(RuntimeIdentifier)' == 'iossimulator-x64'">Platforms/iOS/Entitlements.Simulator.plist</CodesignEntitlements>
+    <TargetPlatformIdentifier Condition="'$(TargetPlatformIdentifier)' == ''">$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <SupportedOSPlatformVersion Condition="'$(TargetPlatformIdentifier)' == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
+    <CodesignEntitlements Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
+    <SupportedOSPlatformVersion Condition="'$(TargetPlatformIdentifier)' == 'android'">23.0</SupportedOSPlatformVersion>
+    <AndroidPackageFormats Condition="'$(Configuration)' == 'Debug'">apk</AndroidPackageFormats>
+    <AndroidPackageFormats Condition="'$(Configuration)' == 'Release'">aab;apk</AndroidPackageFormats>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DeviceServices.fs" />
+    <Compile Include="Charts.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="MauiProgram.fs" />
+    <ProjectReference Include="../FsHealth.Core/FsHealth.Core.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.1.403" />
+    <PackageReference Include="Fabulous.MauiControls" Version="10.0.4" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <MauiIcon Include="Resources/AppIcon/appicon.svg" ForegroundFile="Resources/AppIcon/appiconfg.svg" Color="#153E42" />
+    <MauiSplashScreen Include="Resources/Splash/splash.svg" Color="#153E42" BaseSize="128,128" />
+    <MauiFont Include="Resources/Fonts/*" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
+    <AndroidResource Include="Platforms/Android/Resources/**/*" />
+    <AndroidManifest Include="Platforms/Android/AndroidManifest.xml" />
+    <Compile Include="Platforms/Android/MainActivity.fs" />
+    <Compile Include="Platforms/Android/MainApplication.fs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' Or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
+    <Compile Include="Platforms/Apple/SceneDelegate.fs" />
+    <BundleResource Include="Platforms/Apple/PrivacyInfo.xcprivacy" LogicalName="PrivacyInfo.xcprivacy" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
+    <None Include="Platforms/iOS/Info.plist" LogicalName="Info.plist" />
+    <Compile Include="Platforms/iOS/AppDelegate.fs" />
+    <Compile Include="Platforms/iOS/Program.fs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
+    <None Include="Platforms/MacCatalyst/Info.plist" LogicalName="Info.plist" />
+    <Compile Include="Platforms/MacCatalyst/AppDelegate.fs" />
+    <Compile Include="Platforms/MacCatalyst/Program.fs" />
+  </ItemGroup>
+</Project>
+

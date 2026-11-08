@@ -1,0 +1,213 @@
+# F# Coding Style Guidelines
+
+These guidelines apply to all F# code in this repository.
+
+## Axol Documentation
+https://docs.almond.bot/
+
+## Active workspace
+
+- Use `D:\s\repos\axol-controller` for this app's source, builds, tests and UI work.
+- Do not develop in the former OneDrive workspace.
+- The standalone solver remains in `D:\s\repos\FsIK`; use its pinned NuGet package through `NuGet.Config`.
+
+## Core Principles
+
+- Prefer immutable data and pure functions by default.
+- Prefer modules and functions over classes in most cases.
+- Minimize mutable state and keep mutation scope as small as possible.
+- Favor explicit domain modeling with records and discriminated unions.
+- Optimize for readability and long-term maintainability over cleverness.
+
+## Data Structures
+
+- Use immutable F# collections first: `list`, `Map`, `Set`, and immutable arrays when appropriate.
+- For specialized persistent or high-performance functional collections, prefer `FSharpX.Collections`.
+- Do not expose mutable collections (for example, `Dictionary`) in public module APIs.
+- If mutable structures are needed internally for performance, wrap them behind an immutable functional interface.
+- Where possible, use rich F# Discriminated Unions instead of simple enums as flags to represent case-oriented data. Example:
+
+```fsharp
+// *avoid*
+type AnEnum = Bool | Text
+type ARec =  {flag:AnEnum; boolValue:bool; textValue:string}
+
+// *instead use*
+type AnEnum = Bool of bool | Text of string
+```
+
+## Modules vs Classes
+
+- Use modules as the default organization unit for business logic and transformations.
+- Use classes when they are clearly beneficial or required:
+  - dependency injection boundaries
+  - encapsulating stateful resources (for example, sockets, DB handles, caches)
+  - implementing .NET interfaces and framework integration points
+- Keep classes thin and delegate core logic to pure module functions.
+
+## Mutability Policy
+
+- Prefer immutable `let` bindings.
+- When mutation is required, use `let mutable` in the narrowest possible scope.
+- Avoid `ref` cells unless there is a compelling interoperability reason.
+- Do not spread mutation across multiple functions when one local mutable loop/state machine is sufficient.
+
+## Error Handling and Domain Modeling
+
+- Model domain success/failure with discriminated unions where feasible.
+- Use `Result` for expected business-level failures.
+- Use exceptions for truly exceptional/runtime cases (I/O, infrastructure, invalid external state).
+- Avoid stringly-typed error handling.
+
+## API and Naming Conventions
+
+- Prefer explicit parameter and return types for public functions.
+- Keep internal/local functions concise and allow type inference where it improves readability.
+- Use descriptive names for domain concepts; avoid cryptic abbreviations.
+- Prefer single-case discriminated unions over primitive type aliases for domain values.
+
+## Formatting and Layout
+
+Based on Microsoft F# style guidance and common community conventions:
+
+- Use spaces, not tabs.
+- Use consistent indentation (4 spaces recommended).
+- Use one blank line between top-level declarations.
+- Keep pipelines vertically aligned and readable:
+
+  ```fsharp
+  let result =
+      input
+      |> stepOne
+      |> stepTwo
+      |> stepThree
+  ```
+
+- Avoid alignment that depends on identifier length.
+- Prefer multiline formatting for long argument lists and complex match/if expressions.
+- Keep `open` statements topologically ordered by dependency layers.
+
+## Object-Oriented Features
+
+- Prefer composition over inheritance.
+- Use object expressions for small interface implementations when a full class adds no value.
+- Avoid inheritance-heavy hierarchies unless required by framework constraints.
+
+## Null and Interop Boundaries
+
+- Avoid nulls in domain logic.
+- Convert nullable/null-returning .NET APIs to `option` at the boundary.
+- Validate external inputs early and fail fast with clear exceptions.
+
+## Tooling
+
+- Use Fantomas as the standard formatter.
+- Keep formatting rules consistent with Fantomas defaults unless the repo defines a different profile.
+- Run formatting before finalizing changes that touch F# source.
+
+## Performance Guidance
+
+- Default to immutable design first, then optimize based on measurement.
+- Introduce local mutation or specialized structures only when profiling indicates a real bottleneck.
+- Encapsulate performance-oriented mutable implementations behind stable functional APIs.
+
+## Practical Rule of Thumb
+
+- Start pure and module-first.
+- Add mutation only where measured and justified.
+- Introduce classes only for integration/stateful boundaries.
+- Keep the public surface area simple, explicit, and domain-oriented.
+
+
+# Experimental Coding
+- Put temporary, exploratory and/or experimental code in the /temp directory of the project.
+- ß
+
+## Windows campaign storage
+
+- Start Windows FsHarness campaigns with a short data root outside the source checkout, for example `E:\fsh\r12` or `C:\fsh\r12`.
+- Never use a nested source path such as `<repository>\.fsharness\runs-...` as `--data-root`: native ONNX Runtime provider DLLs can exceed Windows path limits and fail with Error 206.
+- Keep run directory names compact, and verify the effective data root before starting a GPU benchmark.
+
+## FsHarness Codex CLI
+
+- Before launching a campaign, resolve the newest VS Code or VS Code Insiders OpenAI extension CLI for the current OS and architecture, then run `<path> --version` successfully.
+- Pass that verified full path through `--codex` or `FSHARNESS_CODEX_PATH`; record its path and version in the campaign launch log.
+- Never use a Codex executable below `C:\Program Files\WindowsApps\OpenAI.Codex...`; it is a desktop-app payload and cannot be relied on as a headless CLI.
+- Fall back to a standalone CLI only when no verified VS Code CLI is available. Do not rely on an unverified `PATH` entry.
+
+## Parallelization
+For parallel processing, if feasible use FSharp.Control.AsyncSeq as in:
+```fsharp
+#r "nuget: FSharp.Control.AsyncSeq"
+open FSharp.Control
+
+let workOnChunk data = async {
+    return data
+}
+
+let data = [1;2;3]
+data 
+|> AsyncSeq.ofSeq
+|> AsyncSeq.bufferByCountAndTime 16 1
+|> AsyncSeq.mapAsyncParallelThrottled 3 workOnChunk
+```
+
+# UI Coding
+For UI develop use the Elmish pattern and libraries.
+For web ui start with the CoWS framework. See:
+- https://github.com/fwaris/CW1
+- https://github.com/fwaris/FsOpenAI
+
+For desktop ui use Avalonia + FuncUI
+For mobile use Fabulous + MAUI
+
+For high rate changes by pass the Elmish loop and use direct visual references - e.g. ViewRef in Maui. For regular, low-frequency updates use Elmish messages. Use the Elmish model for state management.
+
+## Scripting Guidance
+To the extent feasible, use .fsx script file for scripting over powershell as the scripts can be typed checked before running.
+
+## Controller state and connection lifecycle
+
+- Model application and connection states with discriminated unions carrying the data valid for each case.
+- Use immutable Elmish models, typed messages, pure update functions, and effects for UI state management.
+- Serialize background connection lifecycle events through typed messages and an immutable state machine. Do not coordinate application state through unrelated mutable flags.
+- Limit mutable SSH, stream, timer, and socket resources to thin transport or framework boundaries.
+- Keep Connect disarmed; cancelling startup or disconnecting must stop the adapter before service restoration. Never reconnect into an old motion command.
+- Test lifecycle transitions with simulated transports; run `dotnet test Axol.slnx -c Release`, Python adapter tests, and Fantomas before delivery.
+
+## Camera streaming
+
+- Keep camera capture in separate robot processes and video traffic on a separate SSH connection from motor commands.
+- Use immutable DU camera/session states and typed Elmish messages for camera status. Coalesce JPEG frames at the transport boundary and update image controls outside Elmish; never queue every frame on the UI thread.
+- Keep camera and motion-preview controls attached to stable visual parents across resize and view changes. Change layout and visibility without removing/recreating their parent chain. Clear images only on stale, failed or stopped streams.
+- Reuse a pixel buffer per camera. Per-frame presentation should copy decoded pixels and invalidate painting, without replacing `Image.Source` or invalidating layout. Keep request/decoder backlogs bounded and preserve freshness limits.
+- Read the existing camera assignments. Camera startup/failure must neither arm wheels nor restart the ZED daemon. Clear stale images and release cameras before restoring axol.service.
+
+## Arm pose and hold
+
+- Keep proposals, planning, enabling, and starting as distinct typed actions. Model/chat responses never grant motor authority.
+- Connect arms read-only. Exclude grippers from pose-only enable; preserve torque on Stop and disconnect. Never clear SDK faults or automatically resume an old plan.
+- Enforce stationary base operation in both UI and robot processes. Keep IK, model inference, and camera work separate from the arm target loop.
+- Bind saved poses to robot/model identity and separate simulation identity. Validate trajectories independently of model text.
+- Use simulated transports for development; physical enabling/movement requires explicit operator action and commissioning.
+
+
+## FsIK local package
+
+The geometry, bounded IK solver and trajectory implementation live in the standalone sibling FsIK repository. The controller planner, Kinematics integration tests and benchmarks reference the FsIK NuGet package; do not reintroduce a controller solver source project or linked FsIK sources.
+
+Keep the local feed in NuGet.Config and the pinned FsIKPackageVersion in Directory.Packages.props. Build the library's local package with its F# scripts/Build.fsx pack worker. Package versions are immutable: bump FsIKVersion for changed library code, validate that package against the frozen corpus and independent oracle, then bump the controller's pinned version. The app consumes the pinned FsIK/FsMotion packages directly. Do not reintroduce a deployed legacy planner or a Python route-search fallback; robot Python retains independent validation and execution.
+
+After integration, run the complete F# controller and Python adapter suites, compile the benchmark consumer, and check Fantomas. Keep source extraction, offline validation and building separate from robot enabling or deployment. Preserve the existing JSON planner protocol, reviewed plans, model identity and explicit Start behavior.
+
+
+## Supervised navigation hold
+
+The operator-approved Cosmos navigation workflow is the explicit exception to
+stationary-base arm hold. Arm manipulation/planning still requires a stationary
+base. Only NavigationHoldingArms with a robot-verified taught pose permits bounded
+reviewed base steps; it excludes arm/gripper/lift movement. Preserve robot-side
+arm/camera freshness, 2-degree hold tracking, 150 ms UI expiry, 0.5-second step
+deadline, proposal/session/frame bindings, single-owner transport and explicit Start.
+See docs/COSMOS_NAVIGATION.md. Never broaden keyboard authority through this exception.
