@@ -8,3 +8,5 @@ temp/
 *.aab
 *.ipa
 TestResults/
+
+.fake
